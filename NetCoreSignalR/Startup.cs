@@ -8,6 +8,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.SignalR;
+using NetCoreSignalR.Hubs;
 
 namespace NetCoreSignalR
 {
@@ -29,8 +31,14 @@ namespace NetCoreSignalR
                 options.CheckConsentNeeded = context => true;
                 options.MinimumSameSitePolicy = SameSiteMode.None;
             });
-
-
+            services.AddAuthentication("Signalr")
+                .AddCookie("Signalr", options =>
+                {
+                    options.LoginPath = "/Account/Login";
+                    options.LogoutPath = "/Account/Logout";
+                    options.Cookie.Expiration = TimeSpan.FromHours(2);
+                });
+            services.AddSignalR();
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
         }
 
@@ -48,7 +56,11 @@ namespace NetCoreSignalR
 
             app.UseStaticFiles();
             app.UseCookiePolicy();
-
+            app.UseAuthentication();
+            app.UseSignalR(configure =>
+            {
+                configure.MapHub<ClientChatHub>("/ChatHub");
+            });
             app.UseMvc(routes =>
             {
                 routes.MapRoute(
